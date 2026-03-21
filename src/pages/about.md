@@ -3,12 +3,19 @@ layout: ../layouts/AboutLayout.astro
 title: "About"
 ---
 
-I'm Andrew Patterson — a senior fullstack engineer based in San Francisco.
+Hey, I'm Andrew — a senior fullstack engineer based in San Francisco.
 
-SF State CS grad with 7+ years building across startups, acquisitions, and enterprise consulting. My core stack is TypeScript, React, Node.js/Express, PostgreSQL, and MongoDB. I've shipped production systems on GCP (Pub/Sub, Cloud Functions), AWS, Vercel, and Firebase, with REST APIs, gRPC, and .NET Core in the mix depending on what the job calls for.
+I work primarily with TypeScript, React, Node.js, and PostgreSQL across the web stack. I've spent time at startups, through acquisitions, and in enterprise consulting, which means I've seen what works and what doesn't at pretty much every scale.
 
-Testing-forward by habit: Jest, Vitest, and Enzyme are regular fixtures. CircleCI keeps things honest.
+This blog is where I write about software engineering, web development, things I've learned on the job, and occasionally just things I find interesting.
 
-This blog is where I write about engineering decisions, things I've learned the hard way, and the occasional deep dive into whatever I'm currently working with.
+## Stack
 
-Find me on [GitHub](https://github.com/andrewpat24).
+- **Frontend**: TypeScript, React, Next.js
+- **Backend**: Node.js, Express, PostgreSQL, MongoDB
+- **Cloud**: GCP, AWS, Vercel, Firebase
+- **Other**: REST APIs, gRPC, .NET Core
+
+## Get in touch
+
+Find me on [GitHub](https://github.com/andrewpat24) or reach out directly via the links in the header.

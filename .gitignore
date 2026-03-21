@@ -24,7 +24,9 @@ pnpm-debug.log*
 .idea/
 
 # pagefind
+public/pagefind
 
+# sortie agent metadata
 public/pagefind
 
 # sortie agent orchestration
