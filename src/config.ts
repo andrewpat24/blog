@@ -2,7 +2,7 @@ export const SITE = {
   website: "https://andrewpatterson.dev/",
   author: "Andrew",
   profile: "https://github.com/andrewpat24",
-  desc: "Andrew's blog — software engineering, web development, and the occasional rant.",
+  desc: "Engineering notes from Andrew Patterson — fullstack dev working in TypeScript, React, Node.js, and whatever the cloud throws at me.",
   title: "Andrew's Blog",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
