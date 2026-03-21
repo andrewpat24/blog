@@ -12,8 +12,8 @@ VIOLATIONS=""
 # --- Blog post checks ---
 if [[ "$FILE" == src/data/blog/*.md ]]; then
   # Block h1 in blog post body (frontmatter title is h1)
-  # Skip frontmatter (between --- delimiters), then check for ^#
-  if awk '/^---$/{f++; next} f>=2' "$ABS_FILE" 2>/dev/null | grep -qE '^# [^#]'; then
+  # Skip frontmatter (between --- delimiters) and fenced code blocks, then check for ^#
+  if awk '/^---$/{f++; next} f<2{next} /^```/{code=!code; next} code{next} 1' "$ABS_FILE" 2>/dev/null | grep -qE '^# [^#]'; then
     VIOLATIONS+="Do not use h1 (#) in blog post body — the frontmatter title renders as h1. Use ## through ###### instead.\n"
   fi
 
