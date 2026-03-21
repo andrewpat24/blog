@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+printf '\n'
+printf '\033[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n'
+printf '\033[1;31m        ╔══╗  ╔══╗  ╔══╗  ╔══╗  ╔══╗  ╔══╗  ╔══╗        \033[0m\n'
+printf '\033[1;37m           ★ USS TENKARA — FLIGHT OPS ★                   \033[0m\n'
+printf '\033[1;36m        CALLSIGN: Ghost-1\033[0m\n'
+printf '\033[1;35m        SQUADRON: Ghost\033[0m\n'
+printf '\033[1;33m        MODEL:    SONNET\033[0m\n'
+printf '\033[2;37m        TRAIT:    cautious\033[0m\n'
+printf '\033[1;31m        ╚══╝  ╚══╝  ╚══╝  ╚══╝  ╚══╝  ╚══╝  ╚══╝        \033[0m\n'
+printf '\033[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n'
+printf '\033[1;37m  "Observe orient decide act."\033[0m\n'
+printf '\033[2;37m                          — Colonel John Boyd, OODA Loop\033[0m\n'
+printf '\033[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n'
+printf '\n'
+sleep 1
