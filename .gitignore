@@ -27,4 +27,7 @@ pnpm-debug.log*
 public/pagefind
 
 # sortie agent metadata
+public/pagefind
+
+# sortie agent orchestration
 .sortie/
