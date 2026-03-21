@@ -3,35 +3,19 @@ layout: ../layouts/AboutLayout.astro
 title: "About"
 ---
 
-AstroPaper is a minimal, accessible and SEO-friendly blog theme built with [Astro](https://astro.build/) and [Tailwind CSS](https://tailwindcss.com/).
+Hey, I'm Andrew — a senior fullstack engineer based in San Francisco.
 
-![Astro Paper](public/astropaper-og.jpg)
+I work primarily with TypeScript, React, Node.js, and PostgreSQL across the web stack. I've spent time at startups, through acquisitions, and in enterprise consulting, which means I've seen what works and what doesn't at pretty much every scale.
 
-AstroPaper provides a solid foundation for blogs, or even portfolios\_ with full markdown support, built-in dark mode, and a clean layout that works out-of-the-box.
+This blog is where I write about software engineering, web development, things I've learned on the job, and occasionally just things I find interesting.
 
-The blog posts in this theme also serve as guides, docs or example articles\_ making AstroPaper a flexible starting point for your next content-driven site.
+## Stack
 
-## Features
+- **Frontend**: TypeScript, React, Next.js
+- **Backend**: Node.js, Express, PostgreSQL, MongoDB
+- **Cloud**: GCP, AWS, Vercel, Firebase
+- **Other**: REST APIs, gRPC, .NET Core
 
-AstroPaper comes with a set of useful features that make content publishing easy and effective:
+## Get in touch
 
-- SEO-friendly
-- Fast performance
-- Light & dark mode
-- Highly customizable
-- Organizable blog posts
-- Responsive & accessible
-- Static search with [PageFind](https://pagefind.app/)
-- Automatic social image generation
-
-and so much more.
-
-## Show your support
-
-If you like [AstroPaper](https://github.com/satnaing/astro-paper), consider giving it a star ⭐️.
-
-Found a bug 🐛 or have an improvement ✨ in mind? Feel free to open an [issue](https://github.com/satnaing/astro-paper/issues), submit a [pull request](https://github.com/satnaing/astro-paper/pulls) or start a [discussion](https://github.com/satnaing/astro-paper/discussions).
-
-If you find this theme helpful, you can also [sponsor me on GitHub](https://github.com/sponsors/satnaing) or [buy me a coffee](https://buymeacoffee.com/satnaing) to show your support — every penny counts.
-
-Kyay zuu! 🙏🏼
+Find me on [GitHub](https://github.com/andrewpat24) or reach out directly via the links in the header.

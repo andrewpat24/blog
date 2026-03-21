@@ -2,7 +2,7 @@ export const SITE = {
   website: "https://andrewpatterson.dev/",
   author: "Andrew",
   profile: "https://github.com/andrewpat24",
-  desc: "A minimal, responsive and SEO-friendly Astro blog.",
+  desc: "Andrew's blog — software engineering, web development, and the occasional rant.",
   title: "Andrew's Blog",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
@@ -19,5 +19,5 @@ export const SITE = {
   dynamicOgImage: true,
   dir: "ltr", // "rtl" | "auto"
   lang: "en", // html lang code. Set this empty and default will be "en"
-  timezone: "Asia/Bangkok", // Default global timezone (IANA format) https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  timezone: "America/Los_Angeles", // Default global timezone (IANA format) https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 } as const;
