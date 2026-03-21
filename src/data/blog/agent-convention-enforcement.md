@@ -25,13 +25,11 @@ A three-tier system that keeps AI coding agents aligned with your project's conv
 
 AI coding agents don't read your docs. Even when they do, they suffer from **instruction fade-out** [[12]](#source-12) — conventions loaded at the start of a session gradually lose influence as the context window fills with conversation, code, and tool output. The result: agents write code that compiles, passes tests, and silently violates your architecture. Wrong import paths, bypassed repository layers, incorrect helpers, `any` instead of `unknown`. Each violation becomes precedent for the next agent.
 
-This gets worse across sessions. Different agents in different sessions reach for different patterns — what TechDebt.guru calls **pattern divergence** [[14]](#source-14). One session uses the repository pattern, the next uses direct DB calls. Each looks correct individually. Collectively, your architecture is being rewritten by committee — a committee that never met.
+This gets worse across sessions. Different agents in different sessions reach for different patterns. One uses the repository pattern, the next uses direct DB calls. Each looks correct individually. That's the problem. Drift doesn't announce itself. You just open the codebase one morning and there are three ways to fetch a user, and the agent in your current session is suggesting a fourth.
 
-The research is blunt: documentation alone achieves ~40% convention compliance [[3]](#source-3). Context quality degrades non-linearly past ~40% window fill [[6]](#source-6) [[10]](#source-10), and every frontier model tested shows this degradation — a phenomenon researchers now call **context rot** [[15]](#source-15). The gap between "code that works" and "code that follows conventions" is where architectural drift lives.
+Documentation alone doesn't fix this. Research shows roughly 40% convention compliance with docs only [[3]](#source-3), and that number drops as the context window fills [[6]](#source-6) [[10]](#source-10) [[15]](#source-15). Conventions loaded at session start gradually lose influence as conversation accumulates. By the time the agent is writing code, the rules it read 20 minutes ago are buried under tool output and conversation history.
 
-**In A/B testing, Haiku (Anthropic's cheapest model) jumped from 7.25/10 to 10/10 on convention compliance — same prompts, same codebase, only difference was the enforcement system.** The system turns model capability into a slider instead of a cliff.
-
-See [Haiku A/B results](#haiku-ab-results) for code-level evidence.
+This article addresses these limitations and lays out a strategy for mitigating them, with [A/B results](#haiku-ab-results) showing what the difference looks like in practice.
 
 ---
 
@@ -360,6 +358,233 @@ As an example, our production implementation has 15 blocking checks and 1 non-bl
 ```
 
 The placement checks (last three rows) are deliberately redundant with the `structureCheck()` middleware. PreToolUse catches bad paths at creation time, PostToolUse catches them if a file somehow ends up in a wrong location after the fact (e.g. manual moves, Bash commands that bypass the Write hook). Defense in depth.
+
+### Recipes: Adapting Each Script to Your Codebase
+
+The scripts above are the framework. Below are concrete recipes for the most common scenarios, organized by script. These are generic enough to adapt but specific enough to hand to an agent and say "build this for my codebase."
+
+#### Structure enforcement recipes (inject-structure-context.mjs)
+
+The BLOCKED_PATHS array is where you encode your project's file placement rules. Each entry is a regex + redirect message. Start with the paths agents get wrong most often.
+
+```javascript
+// Recipe: Block layer-less top-level directories
+// Problem: Agents love creating src/utils/, src/helpers/, src/components/
+// Fix: Redirect to the correct layer-specific directory
+const BLOCKED_PATHS = [
+  [/^src\/utils\//, 'Use src/shared/lib/, src/frontend/lib/, or src/server/lib/.'],
+  [/^src\/helpers\//, 'Use src/shared/lib/, src/frontend/lib/, or src/server/lib/.'],
+  [/^src\/components\//, 'Use src/frontend/components/ or src/frontend/views/.'],
+  [/^src\/hooks\//, 'Use src/frontend/hooks/.'],
+  [/^src\/types\//, 'Use src/shared/types/.'],
+  [/^src\/services\//, 'Use src/server/services/<domain>/.'],
+];
+
+// Recipe: Block utils/ inside valid layers (should be lib/)
+// Problem: Agents create src/server/utils/ instead of src/server/lib/
+[
+  [/^src\/server\/utils\//, 'Use src/server/lib/.'],
+  [/^src\/frontend\/utils\//, 'Use src/frontend/lib/.'],
+  [/^src\/shared\/utils\//, 'Use src/shared/lib/.'],
+]
+
+// Recipe: Block layer-confused placements
+// Problem: Agent puts a service in frontend or a hook in server
+[
+  [/^src\/frontend\/services\//, 'Frontend has no services. Use hooks/ for data fetching or server/services/ for business logic.'],
+  [/^src\/server\/components\//, 'UI components go in src/frontend/components/.'],
+  [/^src\/shared\/hooks\//, 'Hooks are client-side. Use src/frontend/hooks/.'],
+  [/^src\/server\/hooks\//, 'Hooks are client-side. Use src/frontend/hooks/.'],
+]
+
+// Recipe: Catch typo/singular variants
+// Problem: Agent writes src/frontend/component/ instead of components/
+[
+  [/^src\/frontend\/component\//, 'Typo: use src/frontend/components/ (plural).'],
+  [/^src\/frontend\/view\//, 'Typo: use src/frontend/views/ (plural).'],
+  [/^src\/server\/service\//, 'Typo: use src/server/services/ (plural).'],
+]
+
+// Recipe: Enforce valid top-level directories
+// Only these directories should exist under src/. Adapt to your project.
+const VALID_TOP_DIRS = new Set(['app', 'frontend', 'server', 'shared']);
+```
+
+#### Code context routing recipes (inject-code-context.mjs)
+
+The ROUTES array maps file paths to documentation. Order matters: specific routes first, layer catchalls last. The resolver walks all routes and reverses matches so general docs inject first and domain-specific docs inject last (recency-privileged).
+
+```javascript
+// Recipe: Test files route to testing docs (match first, before any layer)
+const ROUTES = [
+  [/\.test\.tsx?$/, 'docs/testing/unit-integration.md'],
+  [/\.spec\.ts$/, 'docs/testing/e2e.md'],
+
+  // Recipe: Framework routing layer (Next.js, Remix, etc.)
+  [/^src\/app\/api\//, 'docs/app/api-routing.md'],
+  [/^src\/app\//, 'docs/app/frontend-routing.md'],
+
+  // Recipe: Cross-cutting auth (different docs for frontend vs backend)
+  [/^src\/frontend\/(context|hooks)\/.*auth/, 'docs/auth/frontend.md'],
+  [/^src\/server\/lib\/auth/, 'docs/auth/backend.md'],
+
+  // Recipe: Frontend layer with sub-concerns
+  [/^src\/frontend\/hooks\//, 'docs/frontend/hooks.md'],
+  [/^src\/frontend\/context\//, 'docs/frontend/context.md'],
+  [/^src\/frontend\/(views|components)\//, 'docs/frontend/components.md'],
+  [/^src\/frontend\//, 'docs/frontend/index.md'],  // catchall
+
+  // Recipe: Domain-specific routing (narrow matches before layer catchalls)
+  // Group related services under one domain doc
+  [/^src\/server\/services\/(orders|shipping|fulfillment)\//, 'docs/domain/orders.md'],
+  [/^src\/server\/services\/(billing|payments|invoices)\//, 'docs/domain/billing.md'],
+  [/^src\/server\/services\/(users|auth|permissions)\//, 'docs/domain/users.md'],
+
+  // Recipe: Repo files get the repositories doc (in addition to domain doc)
+  [/^src\/server\/services\/.*-repo\./, 'docs/server/repositories.md'],
+
+  // Recipe: Layer catchalls (broad, matched last)
+  [/^src\/server\/services\//, 'docs/server/service-patterns.md'],
+  [/^src\/server\/integrations\//, 'docs/server/integrations.md'],
+  [/^src\/server\/lib\//, 'docs/server/service-patterns.md'],
+
+  // Recipe: Shared layer with domain filename patterns
+  // Files in shared/ can route to domain docs based on name prefix
+  [/^src\/shared\/types\//, 'docs/shared/types.md'],
+  [/^src\/shared\/schemas\//, 'docs/shared/types.md'],
+  [/^src\/shared\/domain\/order-/, 'docs/domain/orders.md'],
+  [/^src\/shared\/domain\/billing-/, 'docs/domain/billing.md'],
+  [/^src\/shared\//, 'docs/shared/index.md'],  // catchall
+];
+```
+
+With all-matches routing, a file like `src/server/services/billing/billing-repo.ts` matches three routes and gets three docs injected: `service-patterns.md` (layer catchall), `repositories.md` (repo pattern), `billing.md` (domain). General first, specific last.
+
+#### Arch-validate recipes (arch-validate.sh)
+
+Each recipe is a standalone check you can drop into your `arch-validate.sh`. Pattern match on `$FILE` (relative path), grep on `$ABS_FILE` (absolute path for file content).
+
+```bash
+# Recipe: Layer boundary -- frontend can't import server
+if [[ "$FILE" == src/frontend/* ]]; then
+  grep -q "@server/" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Frontend imports from server layer\n"
+fi
+
+# Recipe: Layer boundary -- server can't import frontend
+if [[ "$FILE" == src/server/* ]]; then
+  grep -q "@frontend/" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Server imports from frontend layer\n"
+fi
+
+# Recipe: Layer boundary -- shared can't import either I/O layer
+if [[ "$FILE" == src/shared/* ]]; then
+  grep -q "@server/\|@frontend/" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Shared file imports from server or frontend layer\n"
+fi
+
+# Recipe: Data access -- no direct DB calls outside repo files
+if [[ "$FILE" == src/server/services/* ]] && [[ "$FILE" != *"-repo."* ]]; then
+  grep -qE "supabase\.from|getServerSupabase" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Service calls DB directly -- use the domain's repository\n"
+fi
+
+# Recipe: Data access -- repos can't import other repos
+if [[ "$FILE" == *-repo.ts ]]; then
+  grep -qE "from ['\"]\.\.\.?/.+-repo" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Repo imports another repo -- cross-table joins belong in services\n"
+fi
+
+# Recipe: No fetch() in view components (data fetching belongs in hooks)
+if [[ "$FILE" == src/frontend/views/* ]]; then
+  grep -q "fetch(" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Direct fetch() in views/ -- move to a hook in hooks/\n"
+fi
+
+# Recipe: No fetch() in services (external APIs belong in integrations/)
+if [[ "$FILE" == src/server/services/* ]]; then
+  grep -q "fetch(" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ fetch() in service -- external API calls belong in integrations/\n"
+fi
+
+# Recipe: No console.* (use structured logger)
+# Exclude test files, logger definitions, and instrumentation
+if [[ "$FILE" == src/* ]] && \
+   [[ "$FILE" != *.test.* ]] && \
+   [[ "$FILE" != */logger.ts ]] && \
+   [[ "$FILE" != src/instrumentation.ts ]]; then
+  grep -qE "console\.(log|error|warn)" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ console.* detected -- use structured logger instead\n"
+fi
+
+# Recipe: Named exports only (export default only in framework routing files)
+if [[ "$FILE" == src/* ]] && \
+   [[ "$FILE" != */page.tsx ]] && [[ "$FILE" != */layout.tsx ]] && \
+   [[ "$FILE" != */loading.tsx ]] && [[ "$FILE" != */error.tsx ]] && \
+   [[ "$FILE" != *.test.* ]]; then
+  grep -q "export default" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ export default -- use named exports only\n"
+fi
+
+# Recipe: Barrel import enforcement (import by file path, not barrel)
+if [[ "$FILE" == src/* ]]; then
+  grep -q "from '@frontend/hooks'" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Barrel import from hooks -- import by file path\n"
+fi
+
+# Recipe: Migration-specific -- block deprecated import aliases
+if [[ "$FILE" == src/* ]]; then
+  grep -qE "from ['\"]@/(lib|components)/" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Legacy @/ import -- use @shared, @server, or @frontend\n"
+fi
+
+# Recipe: Zod version enforcement (v4 top-level validators, not v3 chains)
+if [[ "$FILE" == src/shared/schemas/* ]] && [[ "$FILE" != *.test.* ]]; then
+  grep -qE 'z\.string\(\)\.uuid\(' "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ z.string().uuid() is Zod v3 -- use z.uuid()\n"
+  grep -qE 'z\.string\(\)\.email\(' "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ z.string().email() is Zod v3 -- use z.email()\n"
+fi
+
+# Recipe: Project-specific helper enforcement
+# Your project probably has helpers that agents should use instead of generic patterns
+if [[ "$FILE" == src/shared/schemas/* ]] && [[ "$FILE" != *.test.* ]]; then
+  grep -qE "\.enum\(\[.*['\"]true['\"].*['\"]false['\"]" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ .enum(['true','false']) -- use z.stringbool() instead\n"
+fi
+
+# Recipe: Non-blocking warning (exit 0, not exit 2)
+# Use for patterns you want to discourage but not block
+if [[ "$FILE" == src/* ]] && [[ "$FILE" != *.test.* ]] && [[ "$FILE" != *.d.ts ]]; then
+  grep -qE ': any|as any' "$ABS_FILE" 2>/dev/null && \
+    WARNINGS+="⚠️  as any / : any detected -- prefer unknown with type guards\n"
+fi
+```
+
+#### File placement defense-in-depth recipes (arch-validate.sh)
+
+These overlap with `structureCheck()` on purpose. PreToolUse catches bad paths at creation time. PostToolUse catches them if a file gets past the first layer (manual moves, Bash commands that bypass Write hooks).
+
+```bash
+# Recipe: Block known-wrong directories (same list as structureCheck)
+case "$FILE" in
+  src/utils/*|src/helpers/*|src/lib/*|src/components/*|src/hooks/*|src/types/*)
+    VIOLATIONS+="❌ Wrong directory: $FILE -- see file-placement docs\n" ;;
+  src/server/utils/*|src/frontend/utils/*|src/shared/utils/*)
+    VIOLATIONS+="❌ Wrong directory: $FILE -- use lib/ instead of utils/\n" ;;
+  src/frontend/services/*|src/server/components/*|src/shared/hooks/*)
+    VIOLATIONS+="❌ Layer-confused path: $FILE\n" ;;
+esac
+
+# Recipe: Block new top-level directories
+if [[ "$FILE" == src/*/* ]]; then
+  TOP_DIR=$(echo "$FILE" | cut -d/ -f2)
+  case "$TOP_DIR" in
+    app|frontend|server|shared) ;;
+    *) VIOLATIONS+="❌ Invalid top-level directory src/$TOP_DIR/\n" ;;
+  esac
+fi
+```
 
 ### Step 5: Wire hooks in .claude/settings.json
 
