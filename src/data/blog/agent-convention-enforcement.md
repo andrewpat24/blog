@@ -23,11 +23,11 @@ A three-tier system that keeps AI coding agents aligned with your project's conv
 
 ## The Problem
 
-AI coding agents don't read your docs. Even when they do, they suffer from **instruction fade-out** [13] — conventions loaded at the start of a session gradually lose influence as the context window fills with conversation, code, and tool output. The result: agents write code that compiles, passes tests, and silently violates your architecture. Wrong import paths, bypassed repository layers, incorrect helpers, `any` instead of `unknown`. Each violation becomes precedent for the next agent.
+AI coding agents don't read your docs. Even when they do, they suffer from **instruction fade-out** [[13]](#source-13) — conventions loaded at the start of a session gradually lose influence as the context window fills with conversation, code, and tool output. The result: agents write code that compiles, passes tests, and silently violates your architecture. Wrong import paths, bypassed repository layers, incorrect helpers, `any` instead of `unknown`. Each violation becomes precedent for the next agent.
 
-This gets worse across sessions. Different agents in different sessions reach for different patterns — what TechDebt.guru calls **pattern divergence** [15]. One session uses the repository pattern, the next uses direct DB calls. Each looks correct individually. Collectively, your architecture is being rewritten by committee — a committee that never met.
+This gets worse across sessions. Different agents in different sessions reach for different patterns — what TechDebt.guru calls **pattern divergence** [[15]](#source-15). One session uses the repository pattern, the next uses direct DB calls. Each looks correct individually. Collectively, your architecture is being rewritten by committee — a committee that never met.
 
-The research is blunt: documentation alone achieves ~40% convention compliance [3]. Context quality degrades non-linearly past ~40% window fill [6] [11], and every frontier model tested shows this degradation — a phenomenon researchers now call **context rot** [16]. The gap between "code that works" and "code that follows conventions" is where architectural drift lives.
+The research is blunt: documentation alone achieves ~40% convention compliance [[3]](#source-3). Context quality degrades non-linearly past ~40% window fill [[6]](#source-6) [[11]](#source-11), and every frontier model tested shows this degradation — a phenomenon researchers now call **context rot** [[16]](#source-16). The gap between "code that works" and "code that follows conventions" is where architectural drift lives.
 
 **In A/B testing, Haiku (Anthropic's cheapest model) jumped from 7.25/10 to 10/10 on convention compliance — same prompts, same codebase, only difference was the enforcement system.** The system turns model capability into a slider instead of a cliff.
 
@@ -56,9 +56,9 @@ See [Haiku A/B results](#haiku-ab-results) for code-level evidence.
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Why three tiers?** Single-file manifests don't scale. Research measured 29% reduction in runtime and 17% reduction in tokens when context is structured as hot/cold memory. [1] Runtime enforcement achieved 92% compliance vs 40% with documentation alone. [3]
+**Why three tiers?** Single-file manifests don't scale. Research measured 29% reduction in runtime and 17% reduction in tokens when context is structured as hot/cold memory. [[1]](#source-1) Runtime enforcement achieved 92% compliance vs 40% with documentation alone. [[3]](#source-3)
 
-There's also a positional attention argument. LLMs attend strongly to the beginning and end of their context window but poorly to the middle — the "lost-in-the-middle" effect [16]. AGENTS.md loads at session start and gradually sinks into that low-attention middle zone as conversation accumulates. PreToolUse injection fires right before the edit, placing conventions at the recency-privileged end of the context window. Twenty lines in the right **position** outperform two hundred lines at the wrong *time*.
+There's also a positional attention argument. LLMs attend strongly to the beginning and end of their context window but poorly to the middle — the "lost-in-the-middle" effect [[16]](#source-16). AGENTS.md loads at session start and gradually sinks into that low-attention middle zone as conversation accumulates. PreToolUse injection fires right before the edit, placing conventions at the recency-privileged end of the context window. Twenty lines in the right **position** outperform two hundred lines at the wrong *time*.
 
 **How they work together:**
 
@@ -87,9 +87,9 @@ PostToolUse: arch-validate.sh
   └─ Agent must fix violation before proceeding
 ```
 
-**PreToolUse teaches and prevents** — the middleware pipeline runs two passes. First, `structureCheck()` catches file creation in wrong directories **before the file exists**. This is prevention, not cleanup — an agent writing to `src/utils/helpers.ts` is blocked with a redirect to the correct layer-specific `lib/` directory, and the file is never created. Second, `codeContext()` injects all matching domain conventions using all-matches routing. A domain repo file gets three docs: service-patterns, repositories, and the domain doc. No more blind spots from first-match-wins routing. [14]
+**PreToolUse teaches and prevents** — the middleware pipeline runs two passes. First, `structureCheck()` catches file creation in wrong directories **before the file exists**. This is prevention, not cleanup — an agent writing to `src/utils/helpers.ts` is blocked with a redirect to the correct layer-specific `lib/` directory, and the file is never created. Second, `codeContext()` injects all matching domain conventions using all-matches routing. A domain repo file gets three docs: service-patterns, repositories, and the domain doc. No more blind spots from first-match-wins routing. [[14]](#source-14)
 
-**PostToolUse enforces** — catches **structural** violations after the edit (`console.*`, `export default`, direct DB calls outside repos, cross-layer imports). Now also includes defense-in-depth file placement checks — if a file somehow gets past `structureCheck()`, the same wrong paths are caught post-write. The agent **always** self-corrects because the hook blocks it from proceeding until the violation is fixed. The gap between "usually" and "always" is where production systems fail. [7] [10] [14]
+**PostToolUse enforces** — catches **structural** violations after the edit (`console.*`, `export default`, direct DB calls outside repos, cross-layer imports). Now also includes defense-in-depth file placement checks — if a file somehow gets past `structureCheck()`, the same wrong paths are caught post-write. The agent **always** self-corrects because the hook blocks it from proceeding until the violation is fixed. The gap between "usually" and "always" is where production systems fail. [[7]](#source-7) [[10]](#source-10) [[14]](#source-14)
 
 Neither alone is sufficient. Together they cover both categories.
 
@@ -97,7 +97,7 @@ Neither alone is sufficient. Together they cover both categories.
 
 ## Prerequisites
 
-This system is a ratchet, not a cleanup tool. It prevents backsliding on conventions that already exist. [10] [12]
+This system is a ratchet, not a cleanup tool. It prevents backsliding on conventions that already exist. [[10]](#source-10) [[12]](#source-12)
 
 1. **Established conventions** — architecture layers, dependency rules, code patterns must be decided and documented before enforcement can reference them.
 2. **Low existing violation counts** — blocking checks on files with 150 pre-existing violations will block every edit. Only add checks when existing hits are 0-2. `grep -rl 'pattern' src/ | wc -l` to count before adding.
@@ -217,15 +217,15 @@ Canonical examples:
 
 #### What goes in `## Inject` (the discoverability filter)
 
-Before including anything, ask: **can the agent figure this out by reading the code?** If yes, omit it. [9]
+Before including anything, ask: **can the agent figure this out by reading the code?** If yes, omit it. [[9]](#source-9)
 
 **Include:** silent failures, cross-domain side effects, state machine traps, computed-not-stored fields, deletion cascades, non-obvious required helpers (e.g. a project-specific validation helper over a generic one), canonical example file paths with line numbers.
 
-**Exclude:** what functions do, tech stack descriptions, standard patterns, anything discoverable from imports or directory structure. Every line in an inject section signals something confusing enough to trip an agent — probably confusing enough to trip a human too. When you fix the code to make it obvious, remove the instruction. Goal: leaf docs shrink over time. [9]
+**Exclude:** what functions do, tech stack descriptions, standard patterns, anything discoverable from imports or directory structure. Every line in an inject section signals something confusing enough to trip an agent — probably confusing enough to trip a human too. When you fix the code to make it obvious, remove the instruction. Goal: leaf docs shrink over time. [[9]](#source-9)
 
-**Sizing:** Inject 20-40 lines (hard limit 50). Reference has no limit. Split doc if total exceeds ~250 lines — the phonebook pattern is recursive. [5]
+**Sizing:** Inject 20-40 lines (hard limit 50). Reference has no limit. Split doc if total exceeds ~250 lines — the phonebook pattern is recursive. [[5]](#source-5)
 
-**Style:** Positive framing — "Use X for Y" not "Don't use X." Negative framing anchors the wrong pattern (the "pink elephant" problem). Reserve "NEVER" for dangerous violations only. End with canonical file paths — real examples beat prose descriptions. [4] [9]
+**Style:** Positive framing — "Use X for Y" not "Don't use X." Negative framing anchors the wrong pattern (the "pink elephant" problem). Reserve "NEVER" for dangerous violations only. End with canonical file paths — real examples beat prose descriptions. [[4]](#source-4) [[9]](#source-9)
 
 ### Step 3: Write inject-context.mjs (PreToolUse hook)
 
@@ -530,7 +530,7 @@ The scorer should be domain-aware — different checks apply to schemas vs servi
 
 The full protocol is designed to measure whether compliance degrades over a long editing session. 15 sequential edits across schemas, services, hooks, views, repos, and shared domain files. Each task tempts a specific violation.
 
-**Our results: both Haiku and Sonnet scored 108/108 — zero decay.** Compliance at file #15 was identical to file #1. The enforcement system prevents the context window degradation that research predicts past ~40% fill. [6] [11]
+**Our results: both Haiku and Sonnet scored 108/108 — zero decay.** Compliance at file #15 was identical to file #1. The enforcement system prevents the context window degradation that research predicts past ~40% fill. [[6]](#source-6) [[11]](#source-11)
 
 ```
 | Model     | Total tokens | Tool uses | Wall time | Tokens/file |
@@ -651,7 +651,7 @@ function formatValue(value: any): string {
 | Comparison util | **7.5/10** (4 violations) | **10/10** | **any** in types (x1), **any** in domain utils (x3) |
 | **Average** | **7.25/10** | **10/10** | **7** violations prevented |
 
-The enforcement system's value is in conventions that **can't be inferred from the codebase**: which helper to use, `unknown` over `any`, naming patterns. Without explicit injection, Haiku reaches for the generic/obvious approach every time. [4] [9]
+The enforcement system's value is in conventions that **can't be inferred from the codebase**: which helper to use, `unknown` over `any`, naming patterns. Without explicit injection, Haiku reaches for the generic/obvious approach every time. [[4]](#source-4) [[9]](#source-9)
 
 ### Three categories of agent mistakes
 
@@ -667,19 +667,19 @@ The enforcement system's value is in conventions that **can't be inferred from t
 
 | # | Article | Key insight |
 | --- | --- | --- |
-| **[1]** | Codified Context (arxiv, Feb 2026) | Hot/cold memory tiers. 29% runtime reduction, 17% token reduction. |
-| **[2]** | Project Structure for AI (developertoolkit.ai) | Every irrelevant line is wasted context. |
-| **[3]** | Enforce Architectural Patterns (Agiflow) | 92% compliance with runtime enforcement vs 40% with docs alone. |
-| **[4]** | Structure Beats Prose (Stefan van Egmond) | Canonical file paths > prose descriptions. |
-| **[5]** | Refactoring Agent Skills (dev.to) | 200-line rule. Workflow-centric > tool-centric naming. |
-| **[6]** | Coding Agents First-Class (dev.to) | 40% context window rule — degradation past 40%. |
-| **[7]** | Architecture Enforced Not Documented (LinkedIn) | Machine-readable rules delivered at the right moment. |
-| **[8]** | Why AI Needs Structured Code (dev.to) | Structure enables AI to navigate directly. |
-| **[9]** | Stop Using /init for AGENTS.md (Addy Osmani) | Discoverability filter. Pink elephant problem. Docs as debt signal. |
-| **[10]** | Why AI Agents Need External Enforcement, Not Better Prompts (PairCoder) | "System reliability is a property of the architecture, not the model." |
-| **[11]** | Deterministic AI Orchestration (Praetorian) | Context Trap: token cost is linear but attention degradation is non-linear. |
-| **[12]** | Defense in Depth for AI-Assisted Development (Brooks McMillin) | Progressive adoption: pre-commit hooks first, review agents second, CI third. |
-| **[13]** | Building AI Coding Agents for the Terminal (arxiv, Mar 2026) | "Instruction fade-out" — conventions lose influence as context fills. |
-| **[14]** | Claude Code Hooks: The Deterministic Control Layer (Dotzlaw Consulting) | The gap between "usually" and "always" is where production systems fail. |
-| **[15]** | AI Architecture Drift: Detection & Fix (TechDebt.guru) | Pattern divergence — different AI sessions suggest different approaches. |
-| **[16]** | What Is Context Rot? Why LLMs Degrade as Context Grows (Morph/Chroma) | Lost-in-the-middle: 30%+ performance drop. |
+| <a id="source-1"></a>**[1]** | Codified Context (arxiv, Feb 2026) | Hot/cold memory tiers. 29% runtime reduction, 17% token reduction. |
+| <a id="source-2"></a>**[2]** | Project Structure for AI (developertoolkit.ai) | Every irrelevant line is wasted context. |
+| <a id="source-3"></a>**[3]** | Enforce Architectural Patterns (Agiflow) | 92% compliance with runtime enforcement vs 40% with docs alone. |
+| <a id="source-4"></a>**[4]** | Structure Beats Prose (Stefan van Egmond) | Canonical file paths > prose descriptions. |
+| <a id="source-5"></a>**[5]** | Refactoring Agent Skills (dev.to) | 200-line rule. Workflow-centric > tool-centric naming. |
+| <a id="source-6"></a>**[6]** | Coding Agents First-Class (dev.to) | 40% context window rule — degradation past 40%. |
+| <a id="source-7"></a>**[7]** | Architecture Enforced Not Documented (LinkedIn) | Machine-readable rules delivered at the right moment. |
+| <a id="source-8"></a>**[8]** | Why AI Needs Structured Code (dev.to) | Structure enables AI to navigate directly. |
+| <a id="source-9"></a>**[9]** | Stop Using /init for AGENTS.md (Addy Osmani) | Discoverability filter. Pink elephant problem. Docs as debt signal. |
+| <a id="source-10"></a>**[10]** | Why AI Agents Need External Enforcement, Not Better Prompts (PairCoder) | "System reliability is a property of the architecture, not the model." |
+| <a id="source-11"></a>**[11]** | Deterministic AI Orchestration (Praetorian) | Context Trap: token cost is linear but attention degradation is non-linear. |
+| <a id="source-12"></a>**[12]** | Defense in Depth for AI-Assisted Development (Brooks McMillin) | Progressive adoption: pre-commit hooks first, review agents second, CI third. |
+| <a id="source-13"></a>**[13]** | Building AI Coding Agents for the Terminal (arxiv, Mar 2026) | "Instruction fade-out" — conventions lose influence as context fills. |
+| <a id="source-14"></a>**[14]** | Claude Code Hooks: The Deterministic Control Layer (Dotzlaw Consulting) | The gap between "usually" and "always" is where production systems fail. |
+| <a id="source-15"></a>**[15]** | AI Architecture Drift: Detection & Fix (TechDebt.guru) | Pattern divergence — different AI sessions suggest different approaches. |
+| <a id="source-16"></a>**[16]** | What Is Context Rot? Why LLMs Degrade as Context Grows (Morph/Chroma) | Lost-in-the-middle: 30%+ performance drop. |
