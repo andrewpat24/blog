@@ -667,19 +667,19 @@ The enforcement system's value is in conventions that **can't be inferred from t
 
 | # | Article | Key insight |
 | --- | --- | --- |
-| <a id="source-1"></a>**[1]** | Codified Context (arxiv, Feb 2026) | Hot/cold memory tiers. 29% runtime reduction, 17% token reduction. |
-| <a id="source-2"></a>**[2]** | Project Structure for AI (developertoolkit.ai) | Every irrelevant line is wasted context. |
-| <a id="source-3"></a>**[3]** | Enforce Architectural Patterns (Agiflow) | 92% compliance with runtime enforcement vs 40% with docs alone. |
-| <a id="source-4"></a>**[4]** | Structure Beats Prose (Stefan van Egmond) | Canonical file paths > prose descriptions. |
-| <a id="source-5"></a>**[5]** | Refactoring Agent Skills (dev.to) | 200-line rule. Workflow-centric > tool-centric naming. |
-| <a id="source-6"></a>**[6]** | Coding Agents First-Class (dev.to) | 40% context window rule — degradation past 40%. |
+| <a id="source-1"></a>**[1]** | [Codified Context](https://arxiv.org/abs/2602.20478) (arxiv, Feb 2026) | Hot/cold memory tiers. 29% runtime reduction, 17% token reduction. |
+| <a id="source-2"></a>**[2]** | [Project Structure for AI](https://developertoolkit.ai/en/shared-workflows/context-management/file-organization/) (developertoolkit.ai) | Every irrelevant line is wasted context. |
+| <a id="source-3"></a>**[3]** | [Enforce Architectural Patterns](https://agiflow.io/blog/enforce-ai-architectural-patterns-mcp/) (Agiflow) | 92% compliance with runtime enforcement vs 40% with docs alone. |
+| <a id="source-4"></a>**[4]** | [Structure Beats Prose](https://dev.to/stefanve/structure-beats-prose-specs-for-coding-agents-that-actually-work-eln) (Stefan van Egmond) | Canonical file paths > prose descriptions. |
+| <a id="source-5"></a>**[5]** | [Refactoring Agent Skills](https://dev.to/superorange0707/refactoring-agent-skills-from-context-explosion-to-a-fast-reliable-workflow-5hg6) (dev.to) | 200-line rule. Workflow-centric > tool-centric naming. |
+| <a id="source-6"></a>**[6]** | [Coding Agents First-Class](https://dev.to/somedood/coding-agents-as-a-first-class-consideration-in-project-structures-2a6b) (dev.to) | 40% context window rule — degradation past 40%. |
 | <a id="source-7"></a>**[7]** | Architecture Enforced Not Documented (LinkedIn) | Machine-readable rules delivered at the right moment. |
-| <a id="source-8"></a>**[8]** | Why AI Needs Structured Code (dev.to) | Structure enables AI to navigate directly. |
-| <a id="source-9"></a>**[9]** | Stop Using /init for AGENTS.md (Addy Osmani) | Discoverability filter. Pink elephant problem. Docs as debt signal. |
-| <a id="source-10"></a>**[10]** | Why AI Agents Need External Enforcement, Not Better Prompts (PairCoder) | "System reliability is a property of the architecture, not the model." |
-| <a id="source-11"></a>**[11]** | Deterministic AI Orchestration (Praetorian) | Context Trap: token cost is linear but attention degradation is non-linear. |
-| <a id="source-12"></a>**[12]** | Defense in Depth for AI-Assisted Development (Brooks McMillin) | Progressive adoption: pre-commit hooks first, review agents second, CI third. |
-| <a id="source-13"></a>**[13]** | Building AI Coding Agents for the Terminal (arxiv, Mar 2026) | "Instruction fade-out" — conventions lose influence as context fills. |
-| <a id="source-14"></a>**[14]** | Claude Code Hooks: The Deterministic Control Layer (Dotzlaw Consulting) | The gap between "usually" and "always" is where production systems fail. |
-| <a id="source-15"></a>**[15]** | AI Architecture Drift: Detection & Fix (TechDebt.guru) | Pattern divergence — different AI sessions suggest different approaches. |
-| <a id="source-16"></a>**[16]** | What Is Context Rot? Why LLMs Degrade as Context Grows (Morph/Chroma) | Lost-in-the-middle: 30%+ performance drop. |
+| <a id="source-8"></a>**[8]** | [Why AI Needs Structured Code](https://dev.to/matthew_anderson/why-ai-needs-structured-code-1efb) (dev.to) | Structure enables AI to navigate directly. |
+| <a id="source-9"></a>**[9]** | [Stop Using /init for AGENTS.md](https://addyosmani.com/blog/agents-md/) (Addy Osmani) | Discoverability filter. Pink elephant problem. Docs as debt signal. |
+| <a id="source-10"></a>**[10]** | [Why AI Agents Need External Enforcement, Not Better Prompts](https://paircoder.ai/blog/enforcement-not-prompts/) (PairCoder) | "System reliability is a property of the architecture, not the model." |
+| <a id="source-11"></a>**[11]** | [Deterministic AI Orchestration](https://www.praetorian.com/blog/deterministic-ai-orchestration-a-platform-architecture-for-autonomous-development/) (Praetorian) | Context Trap: token cost is linear but attention degradation is non-linear. |
+| <a id="source-12"></a>**[12]** | [Defense in Depth for AI-Assisted Development](https://brooksmcmillin.com/blog/coding-safer-with-llms/) (Brooks McMillin) | Progressive adoption: pre-commit hooks first, review agents second, CI third. |
+| <a id="source-13"></a>**[13]** | [Building AI Coding Agents for the Terminal](https://arxiv.org/abs/2603.05344) (arxiv, Mar 2026) | "Instruction fade-out" — conventions lose influence as context fills. |
+| <a id="source-14"></a>**[14]** | [Claude Code Hooks: The Deterministic Control Layer](https://www.dotzlaw.com/insights/claude-hooks/) (Dotzlaw Consulting) | The gap between "usually" and "always" is where production systems fail. |
+| <a id="source-15"></a>**[15]** | [AI Architecture Drift: Detection & Fix](https://techdebt.guru/ai-architecture-drift/) (TechDebt.guru) | Pattern divergence — different AI sessions suggest different approaches. |
+| <a id="source-16"></a>**[16]** | [What Is Context Rot? Why LLMs Degrade as Context Grows](https://www.morphllm.com/context-rot) (Morph/Chroma) | Lost-in-the-middle: 30%+ performance drop. |
