@@ -89,7 +89,7 @@ PostToolUse: arch-validate.sh
 
 **PreToolUse teaches and prevents** — the middleware pipeline runs two passes. First, `structureCheck()` catches file creation in wrong directories **before the file exists**. This is prevention, not cleanup — an agent writing to `src/utils/helpers.ts` is blocked with a redirect to the correct layer-specific `lib/` directory, and the file is never created. Second, `codeContext()` injects all matching domain conventions using all-matches routing. A domain repo file gets three docs: service-patterns, repositories, and the domain doc. No more blind spots from first-match-wins routing. [[14]](#source-14)
 
-**PostToolUse enforces** — catches **structural** violations after the edit (`console.*`, `export default`, direct DB calls outside repos, cross-layer imports). Now also includes defense-in-depth file placement checks — if a file somehow gets past `structureCheck()`, the same wrong paths are caught post-write. The agent **always** self-corrects because the hook blocks it from proceeding until the violation is fixed. The gap between "usually" and "always" is where production systems fail. [[7]](#source-7) [[10]](#source-10) [[14]](#source-14)
+**PostToolUse enforces** — catches **structural** violations after the edit (`console.*`, `export default`, direct DB calls outside repos, cross-layer imports). Now also includes defense-in-depth file placement checks — if a file somehow gets past `structureCheck()`, the same wrong paths are caught post-write. The agent **always** self-corrects because the hook blocks it from proceeding until the violation is fixed. The gap between "usually" and "always" is where production systems fail. [[10]](#source-10) [[14]](#source-14)
 
 Neither alone is sufficient. Together they cover both categories.
 
@@ -673,7 +673,6 @@ The enforcement system's value is in conventions that **can't be inferred from t
 | <a id="source-4"></a>**[4]** | [Structure Beats Prose](https://dev.to/stefanve/structure-beats-prose-specs-for-coding-agents-that-actually-work-eln) (Stefan van Egmond) | Canonical file paths > prose descriptions. |
 | <a id="source-5"></a>**[5]** | [Refactoring Agent Skills](https://dev.to/superorange0707/refactoring-agent-skills-from-context-explosion-to-a-fast-reliable-workflow-5hg6) (dev.to) | 200-line rule. Workflow-centric > tool-centric naming. |
 | <a id="source-6"></a>**[6]** | [Coding Agents First-Class](https://dev.to/somedood/coding-agents-as-a-first-class-consideration-in-project-structures-2a6b) (dev.to) | 40% context window rule — degradation past 40%. |
-| <a id="source-7"></a>**[7]** | Architecture Enforced Not Documented (LinkedIn) | Machine-readable rules delivered at the right moment. |
 | <a id="source-8"></a>**[8]** | [Why AI Needs Structured Code](https://dev.to/matthew_anderson/why-ai-needs-structured-code-1efb) (dev.to) | Structure enables AI to navigate directly. |
 | <a id="source-9"></a>**[9]** | [Stop Using /init for AGENTS.md](https://addyosmani.com/blog/agents-md/) (Addy Osmani) | Discoverability filter. Pink elephant problem. Docs as debt signal. |
 | <a id="source-10"></a>**[10]** | [Why AI Agents Need External Enforcement, Not Better Prompts](https://paircoder.ai/blog/enforcement-not-prompts/) (PairCoder) | "System reliability is a property of the architecture, not the model." |
