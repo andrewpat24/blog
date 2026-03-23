@@ -1,7 +1,7 @@
 ---
 author: Andrew
 pubDatetime: 2026-03-21T08:00:00Z
-title: "Agent Convention Enforcement System"
+title: "Hook-Based Context Injection for AI Coding Agents"
 slug: agent-convention-enforcement-system
 featured: true
 draft: false
@@ -23,7 +23,7 @@ A three-tier system that keeps AI coding agents aligned with your project's conv
 
 ## The Problem
 
-AI coding agents don't read your docs. Even when they do, they suffer from **instruction fade-out** [[12]](#source-12) — conventions loaded at the start of a session gradually lose influence as the context window fills with conversation, code, and tool output. The result: agents write code that compiles, passes tests, and silently violates your architecture. Wrong import paths, bypassed repository layers, incorrect helpers, `any` instead of `unknown`. Each violation becomes precedent for the next agent.
+AI coding agents don't read your docs. Even when they do, they suffer from **instruction fade-out** [[12]](#source-12). Conventions loaded at the start of a session gradually lose influence as the context window fills with conversation, code, and tool output. The result: agents write code that compiles, passes tests, and silently violates your architecture. Wrong import paths, bypassed repository layers, incorrect helpers, `any` instead of `unknown`. Each violation becomes precedent for the next agent.
 
 This gets worse across sessions. Different agents in different sessions reach for different patterns. One uses the repository pattern, the next uses direct DB calls. Each looks correct individually. That's the problem. Drift doesn't announce itself. You just open the codebase one morning and there are three ways to fetch a user, and the agent in your current session is suggesting a fourth.
 
@@ -56,7 +56,7 @@ This article addresses these limitations and lays out a strategy for mitigating 
 
 **Why three tiers?** Single-file manifests don't scale. Research measured 29% reduction in runtime and 17% reduction in tokens when context is structured as hot/cold memory. [[1]](#source-1) Runtime enforcement achieved 92% compliance vs 40% with documentation alone. [[3]](#source-3)
 
-There's also a positional attention argument. LLMs attend strongly to the beginning and end of their context window but poorly to the middle — the "lost-in-the-middle" effect [[15]](#source-15). AGENTS.md loads at session start and gradually sinks into that low-attention middle zone as conversation accumulates. PreToolUse injection fires right before the edit, placing conventions at the recency-privileged end of the context window. Twenty lines in the right **position** outperform two hundred lines at the wrong *time*.
+There's also a positional attention argument. LLMs attend strongly to the beginning and end of their context window but poorly to the middle (the "lost-in-the-middle" effect [[15]](#source-15)). AGENTS.md loads at session start and gradually sinks into that low-attention middle zone as conversation accumulates. PreToolUse injection fires right before the edit, placing conventions at the recency-privileged end of the context window. Twenty lines in the right **position** outperform two hundred lines at the wrong *time*.
 
 **How they work together:**
 
@@ -85,9 +85,9 @@ PostToolUse: arch-validate.sh
   └─ Agent must fix violation before proceeding
 ```
 
-**PreToolUse teaches and prevents** — the middleware pipeline runs two passes. First, `structureCheck()` catches file creation in wrong directories **before the file exists**. This is prevention, not cleanup — an agent writing to `src/utils/helpers.ts` is blocked with a redirect to the correct layer-specific `lib/` directory, and the file is never created. Second, `codeContext()` injects all matching domain conventions using all-matches routing. A domain repo file gets three docs: service-patterns, repositories, and the domain doc. No more blind spots from first-match-wins routing. [[13]](#source-13)
+**PreToolUse teaches and prevents.** The middleware pipeline runs two passes. First, `structureCheck()` catches file creation in wrong directories **before the file exists**. This is prevention, not cleanup. An agent writing to `src/utils/helpers.ts` is blocked with a redirect to the correct layer-specific `lib/` directory, and the file is never created. Second, `codeContext()` injects all matching domain conventions using all-matches routing. A domain repo file gets three docs: service-patterns, repositories, and the domain doc. No more blind spots from first-match-wins routing. [[13]](#source-13)
 
-**PostToolUse enforces** — catches **structural** violations after the edit (`console.*`, `export default`, direct DB calls outside repos, cross-layer imports). Now also includes defense-in-depth file placement checks — if a file somehow gets past `structureCheck()`, the same wrong paths are caught post-write. The agent **always** self-corrects because the hook blocks it from proceeding until the violation is fixed. The gap between "usually" and "always" is where production systems fail. [[9]](#source-9) [[13]](#source-13)
+**PostToolUse enforces.** Catches **structural** violations after the edit (`console.*`, `export default`, direct DB calls outside repos, cross-layer imports). Now also includes defense-in-depth file placement checks. If a file somehow gets past `structureCheck()`, the same wrong paths are caught post-write. The agent **always** self-corrects because the hook blocks it from proceeding until the violation is fixed. The gap between "usually" and "always" is where production systems fail. [[9]](#source-9) [[13]](#source-13)
 
 Neither alone is sufficient. Together they cover both categories.
 
@@ -97,9 +97,9 @@ Neither alone is sufficient. Together they cover both categories.
 
 This system is a ratchet, not a cleanup tool. It prevents backsliding on conventions that already exist. [[9]](#source-9) [[11]](#source-11)
 
-1. **Established conventions** — architecture layers, dependency rules, code patterns must be decided and documented before enforcement can reference them.
-2. **Low existing violation counts** — blocking checks on files with 150 pre-existing violations will block every edit. Only add checks when existing hits are 0-2. `grep -rl 'pattern' src/ | wc -l` to count before adding.
-3. **`.claude/settings.json` committed to git** — worktree agents inherit hooks from branch HEAD. Uncommitted hooks don't propagate.
+1. **Established conventions.** Architecture layers, dependency rules, code patterns must be decided and documented before enforcement can reference them.
+2. **Low existing violation counts.** Blocking checks on files with 150 pre-existing violations will block every edit. Only add checks when existing hits are 0-2. `grep -rl 'pattern' src/ | wc -l` to count before adding.
+3. **`.claude/settings.json` committed to git.** Worktree agents inherit hooks from branch HEAD. Uncommitted hooks don't propagate.
 
 ---
 
@@ -161,7 +161,7 @@ docs/
 
 A file like `src/server/services/inventory/inventory-repo.ts` belongs to both the **server/repositories** layer and the **inventory** domain. Layer docs cover structural conventions (how repos work, what the query builder is, single-table rule). Domain docs cover business conventions (deletion cascades, computed fields, cross-domain side effects).
 
-The routing table in `inject-context.mjs` decides which docs get injected for a given file path. With all-matches routing, every matching rule fires — domain-specific routes AND layer catchalls both inject. This means an inventory repo file gets `inventory.md` AND `repositories.md` AND `service-patterns.md` in a single context block. General docs inject first (service patterns, repositories), domain doc injects last — so the domain-specific context is closest to the recency-privileged end of the window when the agent writes code.
+The routing table in `inject-context.mjs` decides which docs get injected for a given file path. With all-matches routing, every matching rule fires. Domain-specific routes AND layer catchalls both inject. This means an inventory repo file gets `inventory.md` AND `repositories.md` AND `service-patterns.md` in a single context block. General docs inject first (service patterns, repositories), domain doc injects last, so the domain-specific context is closest to the recency-privileged end of the window when the agent writes code.
 
 #### Index docs (phonebooks)
 
@@ -179,7 +179,7 @@ Index docs are not auto-injected. They're lookup tables for humans and agents wh
 
 #### Leaf doc format
 
-Each leaf doc has two sections — `## Inject` (auto-injected, 20-40 lines) and `## Reference` (full detail, read on demand):
+Each leaf doc has two sections: `## Inject` (auto-injected, 20-40 lines) and `## Reference` (full detail, read on demand):
 
 ```markdown
 # Inventory Domain
@@ -211,7 +211,7 @@ Canonical examples:
 [Full architecture, all the detail — not auto-injected]
 ```
 
-> **Note on "All DB access goes through repo functions" one-liners:** Earlier versions of this system added a one-liner at the top of every domain inject section to compensate for domain routes outranking `repositories.md` (Gotcha #5). With all-matches routing, domain repo files now receive `repositories.md` directly — the one-liner is redundant. Remove it; the doc that actually covers repos in full detail now injects alongside the domain doc.
+> **Note on "All DB access goes through repo functions" one-liners:** Earlier versions of this system added a one-liner at the top of every domain inject section to compensate for domain routes outranking `repositories.md` (Gotcha #5). With all-matches routing, domain repo files now receive `repositories.md` directly. The one-liner is redundant. Remove it; the doc that actually covers repos in full detail now injects alongside the domain doc.
 
 #### What goes in `## Inject` (the discoverability filter)
 
@@ -219,15 +219,15 @@ Before including anything, ask: **can the agent figure this out by reading the c
 
 **Include:** silent failures, cross-domain side effects, state machine traps, computed-not-stored fields, deletion cascades, non-obvious required helpers (e.g. a project-specific validation helper over a generic one), canonical example file paths with line numbers.
 
-**Exclude:** what functions do, tech stack descriptions, standard patterns, anything discoverable from imports or directory structure. Every line in an inject section signals something confusing enough to trip an agent — probably confusing enough to trip a human too. When you fix the code to make it obvious, remove the instruction. Goal: leaf docs shrink over time. [[8]](#source-8)
+**Exclude:** what functions do, tech stack descriptions, standard patterns, anything discoverable from imports or directory structure. Every line in an inject section signals something confusing enough to trip an agent. Probably confusing enough to trip a human too. When you fix the code to make it obvious, remove the instruction. Goal: leaf docs shrink over time. [[8]](#source-8)
 
-**Sizing:** Inject 20-40 lines (hard limit 50). Reference has no limit. Split doc if total exceeds ~250 lines — the phonebook pattern is recursive. [[5]](#source-5)
+**Sizing:** Inject 20-40 lines (hard limit 50). Reference has no limit. Split doc if total exceeds ~250 lines. The phonebook pattern is recursive. [[5]](#source-5)
 
-**Style:** Positive framing — "Use X for Y" not "Don't use X." Negative framing anchors the wrong pattern (the "pink elephant" problem). Reserve "NEVER" for dangerous violations only. End with canonical file paths — real examples beat prose descriptions. [[4]](#source-4) [[8]](#source-8)
+**Style:** Positive framing. "Use X for Y" not "Don't use X." Negative framing anchors the wrong pattern (the "pink elephant" problem). Reserve "NEVER" for dangerous violations only. End with canonical file paths. Real examples beat prose descriptions. [[4]](#source-4) [[8]](#source-8)
 
 ### Step 3: Write inject-context.mjs (PreToolUse hook)
 
-The PreToolUse hook is implemented as a **middleware pipeline** — an orchestrator that runs two middlewares in sequence, each responsible for a different concern. This mirrors the same pattern you'd use for HTTP middleware (auth, rate-limit, logging): factories that return handler objects, run by a shared pipeline runner.
+The PreToolUse hook is implemented as a **middleware pipeline**: an orchestrator that runs two middlewares in sequence, each responsible for a different concern. This mirrors the same pattern you'd use for HTTP middleware (auth, rate-limit, logging): factories that return handler objects, run by a shared pipeline runner.
 
 #### Pipeline architecture
 
@@ -262,24 +262,24 @@ process.stdin.on('end', () => {
 });
 ```
 
-`buildContext()` parses stdin JSON and resolves the file path — stripping `$CLAUDE_PROJECT_DIR` from absolute paths (see Gotcha #1), checking whether the file exists on disk (determines `ctx.isNewFile`), and reading `tool_name`. The pipeline runner calls each middleware in order; if any returns `{ block: true }`, it exits 2 immediately without running subsequent middlewares.
+`buildContext()` parses stdin JSON and resolves the file path, stripping `$CLAUDE_PROJECT_DIR` from absolute paths (see Gotcha #1), checking whether the file exists on disk (determines `ctx.isNewFile`), and reading `tool_name`. The pipeline runner calls each middleware in order; if any returns `{ block: true }`, it exits 2 immediately without running subsequent middlewares.
 
 #### Middleware 1: structureCheck()
 
-Fires **only on `Write` to new files** in `src/`. Edits and overwrites pass through — the file is already placed.
+Fires **only on `Write` to new files** in `src/`. Edits and overwrites pass through. The file is already placed.
 
 Two checks in order:
 
-1. **Blocked paths** — an array of `[regex, guidance]` pairs for known-wrong locations. Covers: layer-less top-level dirs (`src/utils/`, `src/components/`, etc.), `utils/` inside valid layers, layer-confused placements (`src/frontend/services/`), typo/singular variants (`src/frontend/component/`), and standalone repositories directory.
-2. **New top-level directory** — any `src/<X>/` path where `X` is not `app`, `frontend`, `server`, or `shared` is blocked.
+1. **Blocked paths.** An array of `[regex, guidance]` pairs for known-wrong locations. Covers: layer-less top-level dirs (`src/utils/`, `src/components/`, etc.), `utils/` inside valid layers, layer-confused placements (`src/frontend/services/`), typo/singular variants (`src/frontend/component/`), and standalone repositories directory.
+2. **New top-level directory.** Any `src/<X>/` path where `X` is not `app`, `frontend`, `server`, or `shared` is blocked.
 
-On a blocked path: exit 2 with a `BLOCKED:` message explaining the correct location and pointing to `docs/cross-cutting/file-placement.md`. On a valid new path: inject the `## Inject` section of `file-placement.md` into context — the agent sees the full directory map before it writes the file.
+On a blocked path: exit 2 with a `BLOCKED:` message explaining the correct location and pointing to `docs/cross-cutting/file-placement.md`. On a valid new path: inject the `## Inject` section of `file-placement.md` into context. The agent sees the full directory map before it writes the file.
 
 #### Middleware 2: codeContext()
 
-Walks the full ROUTES array and injects **every** matching doc — all-matches routing, not first-match-wins. This eliminates the blind spot where domain routes outranked layer routes (see resolved Gotcha #5).
+Walks the full ROUTES array and injects **every** matching doc. All-matches routing, not first-match-wins. This eliminates the blind spot where domain routes outranked layer routes (see resolved Gotcha #5).
 
-Order still matters for the output — general docs inject first, specific docs last. With recency bias, the most specific doc ends up closest to where the agent is working:
+Order still matters for the output. General docs inject first, specific docs last. With recency bias, the most specific doc ends up closest to where the agent is working:
 
 ```
 general→specific injection order example for billing-repo.ts:
@@ -293,9 +293,9 @@ For shared/cross-layer files, use filename patterns to route to the right domain
 **Key behaviors of the full pipeline:**
 
 - Strips `$CLAUDE_PROJECT_DIR` from absolute paths before pattern matching (see Gotcha #1)
-- All-matches routing — every matching route injects, general→specific ordering
+- All-matches routing: every matching route injects, general→specific ordering
 - Structure enforcement fires before code context (no point injecting a doc for a file that's about to be blocked)
-- No dedup — fires every edit (inject sections are trivial token cost, caching broke subagents)
+- No dedup: fires every edit (inject sections are trivial token cost, caching broke subagents)
 - Extracts only `## Inject` from each matched doc, falls back to full doc if section not found
 - Unmatched `src/` files trigger "stop and ask" alert
 
@@ -331,7 +331,7 @@ exit 0
 
 **Exit codes:** `0` = clean. `2` = blocking (stderr sent to agent as feedback). Other = non-blocking. **PostToolUse does NOT support `additionalContext` JSON output** (GitHub #18427). Exit 2 + stderr is the only feedback mechanism.
 
-As an example, our production implementation has 15 blocking checks and 1 non-blocking warning. Yours will differ — the point is to codify your project's specific rules:
+As an example, our production implementation has 15 blocking checks and 1 non-blocking warning. Yours will differ. The point is to codify your project's specific rules:
 
 ```
 | Check                           | Category        | What it catches                                |
@@ -611,11 +611,11 @@ fi
 }
 ```
 
-Use `$CLAUDE_PROJECT_DIR` — resolves correctly in subagents and worktrees.
+Use `$CLAUDE_PROJECT_DIR`. It resolves correctly in subagents and worktrees.
 
 ### Step 6: Commit .claude/settings.json to git
 
-Required for worktree agents. `git worktree add` checks out from branch HEAD — uncommitted changes don't propagate.
+Required for worktree agents. `git worktree add` checks out from branch HEAD. Uncommitted hooks don't propagate.
 
 ---
 
@@ -654,9 +654,9 @@ Tests whether injected context actually reaches agents and is usable. You'll wri
 
 #### Step 1: Write the exam
 
-Pick 3-5 domains your routing table covers. For each domain, pick one file that routes to that domain's leaf doc. Write 2 questions per domain whose answers live in the target doc's `## Inject` section. **Pre-verify every question** — read the inject section and confirm the answer is there. Questions about content that isn't in the inject section test your routing, not your injection.
+Pick 3-5 domains your routing table covers. For each domain, pick one file that routes to that domain's leaf doc. Write 2 questions per domain whose answers live in the target doc's `## Inject` section. **Pre-verify every question.** Read the inject section and confirm the answer is there. Questions about content that isn't in the inject section test your routing, not your injection.
 
-Good questions target non-obvious conventions: "What helper must be used for X?", "What happens when Y is deleted — what cascades?", "What pattern does Z use and why?"
+Good questions target non-obvious conventions: "What helper must be used for X?", "What happens when Y is deleted? What cascades?", "What pattern does Z use and why?"
 
 #### Step 2: Build + launch the exam agents
 
@@ -728,9 +728,9 @@ After all questions, add:
 Write your results to `[output-path]-[model-name].md`
 ```
 
-Launch three subagents in parallel — one per model tier (e.g. Opus, Sonnet, Haiku). Each subagent must be a fresh context with no shared history. The key constraint: subagents share a session ID, so if you have any dedup caching, all three will race for the cache and only one will receive injection. This is why we removed dedup entirely.
+Launch three subagents in parallel, one per model tier (e.g. Opus, Sonnet, Haiku). Each subagent must be a fresh context with no shared history. The key constraint: subagents share a session ID, so if you have any dedup caching, all three will race for the cache and only one will receive injection. This is why we removed dedup entirely.
 
-**Note on subagent testing:** Hook injection does NOT propagate to Agent SDK worktree subagents — `additionalContext` surfaces in the parent session only. These results were obtained by running each model as a top-level `claude` CLI session where hooks fire correctly.
+**Note on subagent testing:** Hook injection does NOT propagate to Agent SDK worktree subagents. `additionalContext` surfaces in the parent session only. These results were obtained by running each model as a top-level `claude` CLI session where hooks fire correctly.
 
 ### Level 3: Convention scoring on real edits
 
@@ -749,13 +749,13 @@ bash scripts/eval-score-conventions.sh --json src/shared/schemas/some-schema.ts
 bash scripts/eval-score-conventions.sh --self-test
 ```
 
-The scorer should be domain-aware — different checks apply to schemas vs services vs repos vs hooks vs views vs shared files.
+The scorer should be domain-aware. Different checks apply to schemas vs services vs repos vs hooks vs views vs shared files.
 
 ### Context decay test (15-file session)
 
 The full protocol is designed to measure whether compliance degrades over a long editing session. 15 sequential edits across schemas, services, hooks, views, repos, and shared domain files. Each task tempts a specific violation.
 
-**Our results: both Haiku and Sonnet scored 108/108 — zero decay.** Compliance at file #15 was identical to file #1. The enforcement system prevents the context window degradation that research predicts past ~40% fill. [[6]](#source-6) [[10]](#source-10)
+**Our results: both Haiku and Sonnet scored 108/108. Zero decay.** Compliance at file #15 was identical to file #1. The enforcement system prevents the context window degradation that research predicts past ~40% fill. [[6]](#source-6) [[10]](#source-10)
 
 ```
 | Model     | Total tokens | Tool uses | Wall time | Tokens/file |
@@ -814,14 +814,14 @@ Two multi-file features built by Haiku (Anthropic's cheapest model), each built 
 
 **With enforcement 10/10 | Without enforcement 7/10**
 
-With enforcement — project-specific validation helper used correctly:
+With enforcement, project-specific validation helper used correctly:
 
 ```tsx
 export const preferencesQuerySchema = z.object({
   enabled_only: z.stringbool().optional()   // project helper for boolean query params
 ```
 
-Without enforcement — generic approach (wrong for this project):
+Without enforcement, generic approach (wrong for this project):
 
 ```tsx
 export const preferencesQuerySchema = z.object({
@@ -829,7 +829,7 @@ export const preferencesQuerySchema = z.object({
 });
 ```
 
-With enforcement — repo method fully typed:
+With enforcement, repo method fully typed:
 
 ```tsx
 async upsertPreferences(
@@ -838,7 +838,7 @@ async upsertPreferences(
 ): Promise<PreferencesRow> {
 ```
 
-Without enforcement — `any` (twice):
+Without enforcement, `any` (twice):
 
 ```tsx
 async upsert(userId: string, category: string, preferences: any): Promise<Row> {
@@ -849,7 +849,7 @@ async upsert(userId: string, category: string, preferences: any): Promise<Row> {
 
 **With enforcement 10/10 | Without enforcement 7.5/10**
 
-With enforcement — `unknown` throughout:
+With enforcement, `unknown` throughout:
 
 ```tsx
 export interface FieldDiff {
@@ -860,7 +860,7 @@ export interface FieldDiff {
 function areValuesEqual(a: unknown, b: unknown): boolean {
 ```
 
-Without enforcement — `any` (4 instances):
+Without enforcement, `any` (4 instances):
 
 ```tsx
 export interface FieldChange<T = any> {

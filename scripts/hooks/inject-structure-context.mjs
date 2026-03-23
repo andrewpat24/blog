@@ -42,14 +42,21 @@ export function structureCheck() {
       }
 
       // Inject file placement context for valid new files
-      const docsPath = path.join(ctx.projectRoot, "docs/content/blog-posts.md");
-      try {
-        const content = readFileSync(docsPath, "utf8");
-        const injectMatch = content.match(/## Inject\n([\s\S]*?)(?=\n## |$)/);
-        if (injectMatch) {
-          ctx.additionalContext.push(`Context from docs/content/blog-posts.md:\n${injectMatch[1].trim()}`);
-        }
-      } catch { /* doc not found, skip */ }
+      // Blog posts get blog-posts doc, everything else gets gotchas
+      const docsToInject = ctx.filePath.startsWith("src/data/blog/")
+        ? ["docs/content/blog-posts.md", "docs/content/writing-guide.md"]
+        : ["docs/content/gotchas.md"];
+
+      for (const docPath of docsToInject) {
+        const fullPath = path.join(ctx.projectRoot, docPath);
+        try {
+          const content = readFileSync(fullPath, "utf8");
+          const injectMatch = content.match(/## Inject\n([\s\S]*?)(?=\n## |$)/);
+          if (injectMatch) {
+            ctx.additionalContext.push(`Context from ${docPath}:\n${injectMatch[1].trim()}`);
+          }
+        } catch { /* doc not found, skip */ }
+      }
 
       return null;
     },

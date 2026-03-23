@@ -88,6 +88,15 @@ pnpm lint         # ESLint
 | `src/layouts/**`               | `docs/components/layouts.md`      |
 | `astro.config.ts`              | `docs/config/site-config.md`      |
 
+### Additional reference docs (not auto-injected, read on demand)
+
+| Doc                              | When to read                                    |
+| -------------------------------- | ----------------------------------------------- |
+| `docs/content/seo.md`           | Publishing a post, setting up cross-posting, SEO |
+| `docs/content/cross-posting.md` | Distributing a post to dev.to, HN, LinkedIn, etc |
+| `docs/content/gotchas.md`       | Debugging build failures, formatting issues       |
+| `docs/content/writing-guide.md` | Writing or reviewing a post before publishing     |
+
 ## Enforcement
 
 PreToolUse (`inject-context.mjs`):
