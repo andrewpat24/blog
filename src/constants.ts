@@ -5,6 +5,7 @@ import IconBrandX from "@/assets/icons/IconBrandX.svg";
 import IconWhatsapp from "@/assets/icons/IconWhatsapp.svg";
 import IconFacebook from "@/assets/icons/IconFacebook.svg";
 import IconTelegram from "@/assets/icons/IconTelegram.svg";
+import IconLinkedin from "@/assets/icons/IconLinkedin.svg";
 import IconPinterest from "@/assets/icons/IconPinterest.svg";
 import { SITE } from "@/config";
 
@@ -21,6 +22,12 @@ export const SOCIALS: Social[] = [
     href: "https://github.com/andrewpat24",
     linkTitle: `${SITE.title} on GitHub`,
     icon: IconGitHub,
+  },
+  {
+    name: "LinkedIn",
+    href: "https://www.linkedin.com/in/andrewpat24/",
+    linkTitle: `${SITE.author} on LinkedIn`,
+    icon: IconLinkedin,
   },
 ] as const;
 
