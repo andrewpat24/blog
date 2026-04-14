@@ -226,7 +226,7 @@ We documented these separately. Some could be fixed during the refactor; others 
 
 ### Document 7: LLM-Optimized Reference
 
-A compressed version of all the above in ~900 lines. Layer map, dependency rules, file placement, import patterns, naming, service patterns. We used this early on to give agents a single-file reference. In hindsight, context injection via CLAUDE.md rules or hooks is a better approach. The agent gets the relevant conventions at the point of need rather than a massive dump at session start that degrades as the context window fills.
+A compressed version of all the above in ~900 lines. Layer map, dependency rules, file placement, import patterns, naming, service patterns. The idea was to give agents a single file that was easier to navigate than jumping between seven docs. It served its purpose but wasn't great. If I did this again, I'd skip it and use `.claude/rules/` with path-scoped files instead.
 
 ---
 
