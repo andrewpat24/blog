@@ -21,8 +21,30 @@ if (breadcrumbList[0] === "tags" && !isNaN(Number(breadcrumbList[2]))) {
     `${breadcrumbList[1]} ${Number(breadcrumbList[2]) === 1 ? "" : "(page " + breadcrumbList[2] + ")"}`
   );
 }
+
+const siteUrl = Astro.url.origin;
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+    ...breadcrumbList.map((crumb, i) => ({
+      "@type": "ListItem",
+      position: i + 2,
+      name: decodeURIComponent(crumb),
+      ...(i + 1 < breadcrumbList.length && {
+        item: `${siteUrl}/${breadcrumbList.slice(0, i + 1).join("/")}`,
+      }),
+    })),
+  ],
+};
 ---
 
+<script
+  type="application/ld+json"
+  is:inline
+  set:html={JSON.stringify(breadcrumbJsonLd)}
+/>
 <nav class="app-layout mt-8 mb-1" aria-label="breadcrumb">
   <ul
     class="font-light [&>li]:inline [&>li:not(:last-child)>a]:hover:opacity-100"
