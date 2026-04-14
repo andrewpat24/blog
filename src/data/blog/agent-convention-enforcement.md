@@ -3,7 +3,7 @@ author: Andrew
 pubDatetime: 2026-03-21T08:00:00Z
 title: "Hook-Based Context Injection for AI Coding Agents"
 slug: agent-convention-enforcement-system
-featured: true
+featured: false
 draft: false
 tags:
   - ai
