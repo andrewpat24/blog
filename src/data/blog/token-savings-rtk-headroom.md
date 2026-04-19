@@ -192,7 +192,7 @@ python3 ~/.claude/skills/token-savings/scripts/tui.py
 
 ![Token Savings TUI Dashboard](/images/token-savings-tui.png)
 
-The dashboard shows RTK stats on the left (command count, per-command breakdown, efficiency bar) and Headroom stats on the bottom-left (compression rate, prefix cache hit rate, per-model breakdown, cost savings). The right pane is a live feed of recent API requests, color-coded by compression percentage. It reads directly from the Headroom log file, so it captures all requests across all agent sessions, not just the current one.
+The dashboard shows RTK stats on the left (command count, per-command breakdown, efficiency bar) and Headroom stats on the bottom-left (compression rate, prefix cache hit rate, per-model breakdown, cost savings). The right pane is a live feed of recent API requests, color-coded by compression percentage. It reads directly from the Headroom log file, so it captures all requests across all agent sessions, not just the current one. I recommend you run this dashboard at least once to ensure the tooling is working as intended.
 
 Requires `rich` (`pip install rich`). Auto-refreshes every 2 seconds. `Ctrl+C` to exit.
 
