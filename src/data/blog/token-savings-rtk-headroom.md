@@ -237,16 +237,33 @@ curl http://localhost:8787/health    # should return {"status": "healthy"}
 
 ### `rtk init -g` overwrites your PATH fix
 
-Running `rtk init -g` regenerates `rtk-rewrite.sh` from scratch, blowing away any manual PATH edits. The durable fix is a wrapper script:
+Running `rtk init -g` regenerates `rtk-rewrite.sh` from scratch, blowing away any manual PATH edits. RTK also integrity-checks this file with SHA-256 and refuses to run if it's been modified, so you can't patch it directly. The durable fix is a wrapper script that RTK doesn't manage:
 
 ```bash
-# ~/.claude/hooks/rtk-wrapper.sh
+# ~/.claude/hooks/rtk-wrapper.sh — NOT managed by rtk, survives rtk init -g
 #!/usr/bin/env bash
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH"
-exec bash "$(dirname "$0")/rtk-rewrite.sh" "$@"
+
+OUTPUT=$(bash "$(dirname "$0")/rtk-rewrite.sh" "$@")
+EXIT_CODE=$?
+
+if [ -z "$OUTPUT" ] || [ $EXIT_CODE -ne 0 ]; then
+  exit $EXIT_CODE
+fi
+
+# Strip permissionDecision (see "permissionDecision auto-allow" gotcha below)
+echo "$OUTPUT" | jq '
+  if .hookSpecificOutput then
+    .hookSpecificOutput |= del(.permissionDecision, .permissionDecisionReason)
+  else
+    .
+  end
+' 2>/dev/null || echo "$OUTPUT"
+
+exit $EXIT_CODE
 ```
 
-Point the hook in `settings.json` at `rtk-wrapper.sh` instead of `rtk-rewrite.sh`. RTK can regenerate its script freely without breaking the PATH fix.
+Point the hook in `settings.json` at `bash ~/.claude/hooks/rtk-wrapper.sh` (note the `bash` prefix — see the provenance gotcha below). RTK can regenerate its script freely without breaking any fix.
 
 ### RTK hook silently fails without PATH fix
 
@@ -295,6 +312,37 @@ If your environment sets `HTTP_PROXY` or `HTTPS_PROXY`, Claude Code may route He
 ### jq is required for the RTK hook
 
 The RTK hook script depends on `jq` for JSON parsing. If `jq` is not installed, the hook silently exits. Install with `brew install jq` (macOS) or `apt install jq` (Linux).
+
+### `permissionDecision: "allow"` silently kills savings
+
+RTK's hook emits `"permissionDecision": "allow"` alongside `updatedInput` in its JSON output. This auto-bypasses Claude Code's permission system for every rewritten command — a security concern ([rtk-ai/rtk#260](https://github.com/rtk-ai/rtk/issues/260), [#1155](https://github.com/rtk-ai/rtk/issues/1155)), but more importantly a **silent savings killer**.
+
+When `skipDangerousModePermissionPrompt` or `skipAutoPermissionPrompt` is `true` in `settings.json`, Claude Code can skip the permission handling path entirely. When it does, `updatedInput` that came bundled with `permissionDecision` gets **discarded**. The original uncompressed command runs instead — no errors, no warnings, full token output hits the context window.
+
+You can't fix this in `rtk-rewrite.sh` because RTK integrity-checks it (SHA-256) and refuses to run if modified. The fix lives in the wrapper script: pipe the hook output through `jq` to delete `permissionDecision` and `permissionDecisionReason`, keeping only `updatedInput`. Claude Code then processes the rewrite through its normal permission flow. See the updated wrapper script in the `rtk init -g` gotcha above.
+
+### macOS Sequoia `com.apple.provenance` causes intermittent hook failures
+
+macOS Sequoia tags files with a `com.apple.provenance` extended attribute that can't be removed — Sequoia reapplies it at the directory level. When Claude Code invokes hooks via `/bin/sh`, this attribute intermittently causes "Permission denied" errors, even with 755 permissions.
+
+In Claude Code, this shows up as:
+
+```
+⎿  PreToolUse:Bash hook error
+⎿  Failed with non-blocking status code: /bin/sh: /Users/you/.claude/hooks/rtk-wrapper.sh: Permission denied
+```
+
+The exit code from a permission denied crash is non-zero and non-2. Per Claude Code's exit code contract, that's a "non-blocking error" — the command runs **unmodified**. So `cat` instead of `rtk read`, `grep` instead of `rtk grep`, full uncompressed output.
+
+**Important:** If you're seeing these permission denied errors, you're very likely also being hit by the `permissionDecision` gotcha above at the same time. The provenance errors are the visible symptom — they show up in Claude's output. But the `permissionDecision` leak is completely silent: commands run uncompressed with no error, no warning. Both cause lost savings independently. The permission denied errors are the canary — if you're seeing them, check whether the `permissionDecision` strip is also missing from your wrapper.
+
+**Fix:** Prefix the hook command in `settings.json` with `bash` so the shell reads the file as data instead of exec'ing it:
+
+```json
+"command": "bash /Users/you/.claude/hooks/rtk-wrapper.sh"
+```
+
+This bypasses the exec permission check entirely. Apply the same prefix to any other hooks (Headroom, custom validators, etc.).
 
 ---
 
