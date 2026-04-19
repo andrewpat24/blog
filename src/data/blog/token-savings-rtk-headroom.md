@@ -300,7 +300,7 @@ The RTK hook script depends on `jq` for JSON parsing. If `jq` is not installed, 
 
 ## Tools Not Yet Evaluated
 
-The following projects address similar problems with different approaches. We have not tested them.
+The following projects address tackling token saving with different approaches, I've yet to test these but intend to in the future. If they prove beneficial, I'll be sure to update this article! 
 
 - **[Tamp](https://github.com/sliday/tamp)**: JS-based token compression proxy with configurable pipeline stages (minify, dedup, diff, prune). Claims 52.6% savings. `npx @sliday/tamp`. No Python dependency.
 - **[Kompact](https://github.com/npow/kompact)**: Python proxy using TF-IDF based compression. Claims 40-70% savings. Different algorithmic approach than Headroom's ML compression.
