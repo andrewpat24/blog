@@ -165,7 +165,7 @@ RTK reduces noise per command. Headroom compresses what remains before it hits t
 
 ---
 
-## Reproduction
+## Configuration
 
 ### Automated setup
 
