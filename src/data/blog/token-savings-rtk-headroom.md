@@ -305,7 +305,6 @@ The following projects address similar problems with different approaches. We ha
 - **[Tamp](https://github.com/sliday/tamp)**: JS-based token compression proxy with configurable pipeline stages (minify, dedup, diff, prune). Claims 52.6% savings. `npx @sliday/tamp`. No Python dependency.
 - **[Kompact](https://github.com/npow/kompact)**: Python proxy using TF-IDF based compression. Claims 40-70% savings. Different algorithmic approach than Headroom's ML compression.
 - **[ClaudeSlim](https://github.com/apolloraines/claudeslim)**: Python proxy targeting 60-85% compression via message-level compression. Early stage.
-- **Headroom `learn`**: A feature of Headroom we have not yet used. Analyzes past session history for failure patterns and generates preventive context for CLAUDE.md and MEMORY.md.
 
 ---
 
