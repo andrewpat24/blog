@@ -27,7 +27,7 @@ Every CLI command an AI coding agent runs returns output that enters the context
 
 This output is designed for humans to scan, not for models to reason over. Every decorative header, alignment space, and repeated path prefix is a token consumed with no effect on the agent's next decision.
 
-On a production TypeScript/Next.js codebase, we measured where tokens were going across 26,779 commands and 2,246 API requests over a month. Two compression layers, operating at different points in the pipeline, filtered 1.5 billion tokens of CLI noise and redundant context.
+On a production TypeScript/Next.js codebase, I measured where tokens were going across 26,779 commands and 2,246 API requests over a month. Two compression layers, operating at different points in the pipeline, filtered 1.5 billion tokens of CLI noise and redundant context.
 
 ---
 
@@ -169,7 +169,7 @@ RTK reduces noise per command. Headroom compresses what remains before it hits t
 
 ### Automated setup
 
-We wrote a Claude Code skill that detects, installs, and wires both tools. It handles platform detection, hook wiring, and the PATH fix automatically:
+I wrote a Claude Code skill that detects, installs, and wires both tools. It handles platform detection, hook wiring, and the PATH fix automatically:
 
 [`/token-savings` skill on GitHub](https://github.com/andrew-tenkara/CLAUDE-MD/tree/main/skills/token-savings)
 
@@ -266,7 +266,7 @@ Two different packages are named "rtk": Rust Token Killer ([rtk-ai/rtk](https://
 
 ### RTK hook must be last in PreToolUse array
 
-If you have other PreToolUse hooks with `matcher: "Bash"` (e.g. context injection, wakatime), RTK's hook must be the last entry in the array. If another hook runs first and doesn't pass stdin through correctly, RTK's hook never receives the tool input. We discovered this running multiple PreToolUse hooks for context injection alongside RTK.
+If you have other PreToolUse hooks with `matcher: "Bash"` (e.g. context injection, wakatime), RTK's hook must be the last entry in the array. If another hook runs first and doesn't pass stdin through correctly, RTK's hook never receives the tool input. I discovered this running multiple PreToolUse hooks for context injection alongside RTK.
 
 ### Hooks don't fire for Agent tool teammates
 
@@ -274,7 +274,7 @@ PreToolUse hooks (including RTK's) do not fire for teammates spawned via the Age
 
 ### Some requests show higher token counts after Headroom
 
-You may notice `router:noop` requests where the "after" count is slightly higher than "before" (e.g. 136.9K before, 137.4K after). When Headroom's content router determines a request doesn't benefit from compression, it passes through. We observed a consistent ~200-500 token increase on passthrough requests, likely proxy metadata overhead. On a 137K request, that's <0.4%. We have not found documentation for this behavior in Headroom's repo; this is based on our own observations.
+You may notice `router:noop` requests where the "after" count is slightly higher than "before" (e.g. 136.9K before, 137.4K after). When Headroom's content router determines a request doesn't benefit from compression, it passes through. I observed a consistent ~200-500 token increase on passthrough requests, likely proxy metadata overhead. On a 137K request, that's <0.4%. I have not found documentation for this behavior in Headroom's repo; this is based on my own observations.
 
 ### Headroom falls back silently
 
