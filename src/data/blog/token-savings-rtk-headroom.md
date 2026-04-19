@@ -138,9 +138,9 @@ Compression is content-aware. JSON arrays and build logs compress heavily. Sourc
 
 Prefix caching is an Anthropic API feature. When the beginning of your prompt matches a previous request, Anthropic serves the cached prefix at a 90% discount on input tokens. This happens at the API level regardless of whether Headroom is running.
 
-Headroom's role is to *maximize cache hits*. When it compresses tool results, it leaves the system prompt and early conversation turns untouched so the prefix stays stable between requests. Without this, compression or compaction can change the prompt prefix and bust the cache. In our measurements, this prefix-aware strategy produced a 96% cache hit rate and $355 in Anthropic-side savings.
+Headroom's role is to *maximize cache hits*. When it compresses tool results, it leaves the system prompt and early conversation turns untouched so the prefix stays stable between requests. Without this, compression or compaction can change the prompt prefix and bust the cache. In my measurements, this prefix-aware strategy produced a 96% cache hit rate and $355 in Anthropic-side savings.
 
-Headroom's [published benchmarks](https://github.com/chopratejas/headroom/blob/main/docs/content/docs/benchmarks.mdx) show negligible accuracy loss with high compression ratios across 250+ production instances. Our overhead was higher than their reported median because coding sessions involve larger payloads than typical use cases.
+Headroom's [published benchmarks](https://github.com/chopratejas/headroom/blob/main/docs/content/docs/benchmarks.mdx) show negligible accuracy loss with high compression ratios across 250+ production instances. My overhead was higher than their reported median because coding sessions involve larger payloads than typical use cases.
 
 ---
 
@@ -275,7 +275,7 @@ This is [documented as GitHub issue #685](https://github.com/rtk-ai/rtk/issues/6
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH"
 ```
 
-RTK's `rtk init -g` does not add this line as of v0.37.0. You need to add it manually. Our `/token-savings` skill checks for this automatically.
+RTK's `rtk init -g` does not add this line as of v0.37.0. You need to add it manually. My `/token-savings` skill checks for this automatically.
 
 ### RTK name collision
 
