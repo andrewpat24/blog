@@ -3,7 +3,7 @@ author: Andrew
 pubDatetime: 2026-04-18T08:00:00Z
 title: "Token Compression for Claude Code with RTK + Headroom"
 slug: token-savings-rtk-headroom
-featured: false
+featured: true
 draft: false
 tags:
   - ai

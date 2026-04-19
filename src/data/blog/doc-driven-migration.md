@@ -2,7 +2,7 @@
 author: Andrew
 pubDatetime: 2026-04-12T08:00:00Z
 title: "Documentation-Driven Migration: A Strategy for AI-Assisted Codebase Restructuring"
-featured: true
+featured: false
 draft: false
 tags:
   - ai
