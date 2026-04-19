@@ -180,7 +180,7 @@ git clone https://github.com/andrew-tenkara/CLAUDE-MD.git ~/Projects/CLAUDE-MD
 ln -sf ~/Projects/CLAUDE-MD/skills/token-savings ~/.claude/skills/token-savings
 ```
 
-Run `/token-savings` in any Claude Code session. It handles detection, setup, and configuration automatically. I've also included a savings dashboard so you can check your session log to ensure the tooling is working as intended.
+Run `/token-savings` in any Claude Code session. 
 
 ### Live monitoring
 
