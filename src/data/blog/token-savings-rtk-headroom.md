@@ -13,11 +13,11 @@ tags:
   - token-optimization
 description: >
   RTK filters CLI command output before it enters the context window. Headroom compresses
-  API context via a local proxy. Together they saved 1.5B tokens of CLI noise over 5 weeks
+  API context via a local proxy. Together they saved 1.5B tokens of CLI noise over a month
   on a production codebase. Setup guide and measured results included.
 ---
 
-RTK filters CLI command output before it enters the context window. Headroom compresses API context via a local proxy. Together they saved 1.5B tokens of CLI noise over 5 weeks on a production codebase. Setup guide and measured results included.
+RTK filters CLI command output before it enters the context window. Headroom compresses API context via a local proxy. Together they saved 1.5B tokens of CLI noise over a month on a production codebase. Setup guide and measured results included.
 
 ---
 
