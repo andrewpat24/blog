@@ -11,13 +11,10 @@ tags:
   - claude-code
   - engineering
   - token-optimization
-description: >
-  RTK filters CLI command output before it enters the context window. Headroom compresses
-  API context via a local proxy. Together they saved 1.5B tokens of CLI noise over a month
-  on a production codebase. Setup guide and measured results included.
+description: "RTK and Headroom saved 1.5B tokens in one month. Setup guide included."
 ---
 
-RTK filters CLI command output before it enters the context window. Headroom compresses API context via a local proxy. Together they saved 1.5B tokens of CLI noise over a month on a production codebase. Setup guide and measured results included.
+RTK filters CLI command output before it enters the context window. Headroom compresses API context via a local proxy. Together they saved 1.5B tokens of CLI noise over a month on a production codebase.
 
 ---
 
@@ -68,7 +65,7 @@ The largest single source of savings is file reads. Agents read files constantly
 | opus-4-5 | 819.5K | 368.9K | 31.0% | 29 |
 | sonnet-4-6 | 965.6K | 569.3K | 37.1% | 32 |
 
-Prefix cache hit rate: 96%. This alone accounted for $355 in savings by avoiding redundant prompt processing.
+Prefix cache hit rate: 96%.
 
 ---
 
@@ -138,7 +135,7 @@ Compression is content-aware. JSON arrays and build logs compress heavily. Sourc
 
 Prefix caching is an Anthropic API feature. When the beginning of your prompt matches a previous request, Anthropic serves the cached prefix at a 90% discount on input tokens. This happens at the API level regardless of whether Headroom is running.
 
-Headroom's role is to *maximize cache hits*. When it compresses tool results, it leaves the system prompt and early conversation turns untouched so the prefix stays stable between requests. Without this, compression or compaction can change the prompt prefix and bust the cache. In my measurements, this prefix-aware strategy produced a 96% cache hit rate and $355 in Anthropic-side savings.
+Headroom's role is to *maximize cache hits*. When it compresses tool results, it leaves the system prompt and early conversation turns untouched so the prefix stays stable between requests. Without this, compression or compaction can change the prompt prefix and bust the cache. This prefix-aware strategy produced a 96% cache hit rate.
 
 Headroom's [published benchmarks](https://github.com/chopratejas/headroom/blob/main/docs/content/docs/benchmarks.mdx) show negligible accuracy loss with high compression ratios across 250+ production instances. My overhead was higher than their reported median because coding sessions involve larger payloads than typical use cases.
 
@@ -235,6 +232,18 @@ curl http://localhost:8787/health    # should return {"status": "healthy"}
 
 ## Gotchas
 
+### RTK hook silently fails without PATH fix
+
+Claude Code runs hooks in a minimal PATH (`/usr/bin:/bin:/usr/sbin:/sbin`). If RTK is installed via Homebrew (`/opt/homebrew/bin/`) or cargo (`~/.cargo/bin/`), the hook's `command -v rtk` check fails silently, exits 0, and every command passes through unfiltered. No errors. No warnings. You just don't get savings.
+
+This is [documented as GitHub issue #685](https://github.com/rtk-ai/rtk/issues/685) on RTK's repo. The fix is one line at the top of the hook script:
+
+```bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH"
+```
+
+RTK's `rtk init -g` does not add this line as of v0.37.0. You need to add it manually. My `/token-savings` skill checks for this automatically.
+
 ### `rtk init -g` overwrites your PATH fix
 
 Running `rtk init -g` regenerates `rtk-rewrite.sh` from scratch, blowing away any manual PATH edits. RTK also integrity-checks this file with SHA-256 and refuses to run if it's been modified, so you can't patch it directly. The durable fix is a wrapper script that RTK doesn't manage:
@@ -264,18 +273,6 @@ exit $EXIT_CODE
 ```
 
 Point the hook in `settings.json` at `bash ~/.claude/hooks/rtk-wrapper.sh` (note the `bash` prefix — see the provenance gotcha below). RTK can regenerate its script freely without breaking any fix.
-
-### RTK hook silently fails without PATH fix
-
-Claude Code runs hooks in a minimal PATH (`/usr/bin:/bin:/usr/sbin:/sbin`). If RTK is installed via Homebrew (`/opt/homebrew/bin/`) or cargo (`~/.cargo/bin/`), the hook's `command -v rtk` check fails silently, exits 0, and every command passes through unfiltered. No errors. No warnings. You just don't get savings.
-
-This is [documented as GitHub issue #685](https://github.com/rtk-ai/rtk/issues/685) on RTK's repo. The fix is one line at the top of the hook script:
-
-```bash
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH"
-```
-
-RTK's `rtk init -g` does not add this line as of v0.37.0. You need to add it manually. My `/token-savings` skill checks for this automatically.
 
 ### RTK name collision
 
