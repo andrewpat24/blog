@@ -245,11 +245,13 @@ The orchestrator wires the pipeline:
 // inject-context.mjs
 import { buildContext, runPipeline } from './hooks/base.mjs';
 import { structureCheck } from './hooks/inject-structure-context.mjs';
+import { dedupCheck } from './hooks/inject-dedup-check.mjs';
 import { codeContext } from './hooks/inject-code-context.mjs';
 
 const PIPELINE = [
-  structureCheck(),   // runs first — blocks bad paths, injects placement context
-  codeContext(),      // runs second — injects all matching domain docs
+  structureCheck(),   // blocks bad paths, injects placement context
+  dedupCheck(),       // detects new functions, advises duplicate search
+  codeContext(),      // injects all matching domain docs
 ];
 
 let input = '';
@@ -298,6 +300,51 @@ For shared/cross-layer files, use filename patterns to route to the right domain
 - No dedup: fires every edit (inject sections are trivial token cost, caching broke subagents)
 - Extracts only `## Inject` from each matched doc, falls back to full doc if section not found
 - Unmatched `src/` files trigger "stop and ask" alert
+
+#### Duplicate Function Detection Middleware
+
+The `dedupCheck` middleware addresses agent tendency to recreate existing functionality. The middleware parses new function signatures from Write/Edit operations and injects advisory context when new functions are detected.
+
+```javascript
+// hooks/inject-dedup-check.mjs
+const FUNCTION_PATTERNS = [
+  /\bexport\s+(?:async\s+)?function\s+(\w+)\s*[(<]/g,
+  /\bexport\s+const\s+(\w+)\s*=\s*(?:async\s*)?(?:<[^>]*>\s*)?\(?[^)]*\)?(?:\s*:[^=]+?)?\s*=>/g,
+  /(?<![.\w])function\s+(\w+)\s*[(<]/g,
+];
+
+export function dedupCheck() {
+  return {
+    name: 'dedup-check',
+    fn(ctx) {
+      if (ctx.toolName !== 'Write' && ctx.toolName !== 'Edit') return null;
+      
+      const newNames = extractFunctionNames(ctx.content);
+      const oldNames = new Set(extractFunctionNames(ctx.oldContent ?? ''));
+      const addedNames = newNames.filter((n) => !oldNames.has(n));
+      
+      if (addedNames.length === 0) return null;
+
+      const searchCommands = addedNames
+        .slice(0, 3)
+        .map((n) => `Grep: "(?:function|const) ${n}"`)
+        .join('\n');
+
+      ctx.context.push(
+        `⚠️ DUPLICATE CHECK: This edit introduces new function(s): ${addedNames.join(', ')}\n\n` +
+        `Before proceeding, verify no existing implementation exists:\n` +
+        `- mcp__CodeGraphContext__find_code with each name (fuzzy_search: true)\n` +
+        `- Or Serena find_symbol with each function name\n` +
+        `${searchCommands}`
+      );
+
+      return null;
+    },
+  };
+}
+```
+
+The middleware implements delta-aware function detection by comparing new content against old content (Edit old_string or existing file content for Write operations). Pattern matching covers export function declarations, const arrow assignments, and standard function declarations across TypeScript and JavaScript. The implementation uses advisory context injection rather than blocking validation to avoid the known exit 2 stop bug while maintaining agent workflow continuity.
 
 ### Step 4: Write arch-validate.sh (PostToolUse hook)
 
@@ -553,6 +600,42 @@ if [[ "$FILE" == src/shared/schemas/* ]] && [[ "$FILE" != *.test.* ]]; then
     VIOLATIONS+="❌ .enum(['true','false']) -- use z.stringbool() instead\n"
 fi
 
+# Recipe: Zod v4 migration validation
+if [[ "$FILE" == src/shared/schemas/* ]] && [[ "$FILE" != *.test.* ]]; then
+  grep -qE 'z\.string\(\)\.uuid\(' "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ z.string().uuid() is Zod v3 -- use z.uuid(). We are on v4.\n"
+  grep -qE 'z\.string\(\)\.email\(' "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ z.string().email() is Zod v3 -- use z.email(). We are on v4.\n"
+  grep -qE "\.enum\(\[.*['\"]true['\"].*['\"]false['\"]" "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ .enum(['true','false']) detected -- use z.stringbool() instead\n"
+fi
+
+# Recipe: Browser API detection in shared layer
+if [[ "$FILE" == src/shared/* ]] && [[ "$FILE" != *.test.* ]]; then
+  grep -qE '\bdocument\.(createElement|getElementById|querySelector|body|cookie)\b|\bwindow\.(location|addEventListener|__)\b|\blocalStorage\b|\bsessionStorage\b' "$ABS_FILE" 2>/dev/null && \
+    VIOLATIONS+="❌ Browser API in shared layer -- move to src/frontend/lib/ or src/frontend/hooks/\n"
+fi
+
+# Recipe: Dynamic import warnings (non-blocking -- sophisticated AWK parsing)
+if [[ "$FILE" == src/* ]] && [[ "$FILE" != *.test.* ]]; then
+  INLINE_IMPORTS=$(awk '
+    !in_function && /function.*\{|=> *\{/ { in_function = 1; depth = 0 }
+    !in_function && /\) *\{/ && !/if *\(|for *\(|while *\(|switch *\(|catch *\(|else/ { in_function = 1; depth = 0 }
+    in_function {
+      if (/import *\(/ && !/^ *\/\/|^ *\*|\/\*.*\*\//) print NR ":" $0
+      tmp = $0; gsub(/[^{}]/, "", tmp)
+      n = split(tmp, c, "")
+      for (i = 1; i <= n; i++) { if (c[i] == "{") depth++; if (c[i] == "}") depth-- }
+      if (depth <= 0) in_function = 0
+    }
+  ' "$ABS_FILE" 2>/dev/null)
+  
+  if [ -n "$INLINE_IMPORTS" ]; then
+    IMPORT_COUNT=$(echo "$INLINE_IMPORTS" | wc -l)
+    WARNINGS+="⚠️  $IMPORT_COUNT dynamic import(s) inside functions -- consider static imports for better bundling\n"
+  fi
+fi
+
 # Recipe: Non-blocking warning (exit 0, not exit 2)
 # Use for patterns you want to discourage but not block
 if [[ "$FILE" == src/* ]] && [[ "$FILE" != *.test.* ]] && [[ "$FILE" != *.d.ts ]]; then
@@ -560,6 +643,8 @@ if [[ "$FILE" == src/* ]] && [[ "$FILE" != *.test.* ]] && [[ "$FILE" != *.d.ts ]
     WARNINGS+="⚠️  as any / : any detected -- prefer unknown with type guards\n"
 fi
 ```
+
+Production implementations typically include 80+ validation rules extending these core patterns. Enhanced validation covers framework-specific migrations (Zod v4 patterns), runtime environment constraints (browser API usage in shared code), bundling optimizations (dynamic import detection), and sophisticated parsing techniques (AWK-based function scope analysis). Error messaging improvements include contextual documentation injection via `inject_doc()` helpers and separation of blocking violations (exit 2) from non-critical warnings (exit 0) to maintain agent workflow continuity.
 
 #### File placement defense-in-depth recipes (arch-validate.sh)
 
