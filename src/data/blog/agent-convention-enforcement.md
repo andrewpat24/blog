@@ -211,8 +211,6 @@ Canonical examples:
 [Full architecture, all the detail — not auto-injected]
 ```
 
-> **Note on "All DB access goes through repo functions" one-liners:** Earlier versions of this system added a one-liner at the top of every domain inject section to compensate for domain routes outranking `repositories.md` (Gotcha #5). With all-matches routing, domain repo files now receive `repositories.md` directly. The one-liner is redundant. Remove it; the doc that actually covers repos in full detail now injects alongside the domain doc.
-
 #### What goes in `## Inject` (the discoverability filter)
 
 Before including anything, ask: **can the agent figure this out by reading the code?** If yes, omit it. [[8]](#source-8)
